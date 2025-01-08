@@ -1,18 +1,14 @@
 {
-  "name": "vote-app",
+  "name": "voting-party",
   "version": "1.0.0",
-  "description": "Web app for voting on a party",
+  "description": "A simple voting app",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5"
-  },
-  "engines": {
-    "node": "16.x"
+    "express": "^4.17.1"
   }
 }
+
 
