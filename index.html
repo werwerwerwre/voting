@@ -1,131 +1,82 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Голосування: Хочеш вечірку?</title>
+    <title>Voting Party</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             text-align: center;
+            padding: 20px;
         }
-
-        h1 {
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            padding: 10px 20px;
+        .button {
+            display: inline-block;
             margin: 10px;
-            background-color: #4CAF50;
+            padding: 10px 20px;
+            font-size: 18px;
             color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .btn:hover {
-            background-color: #45a049;
-        }
-
-        #result {
-            margin-top: 20px;
-        }
-
-        #yesButton {
             background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
-
-        #noButton {
+        .button.no {
             background-color: #f44336;
         }
-
-        #yesButton:hover {
-            background-color: #45a049;
-        }
-
-        #noButton:hover {
-            background-color: #e53935;
+        .results {
+            margin-top: 20px;
+            font-size: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Голосування: Чи хочеш ти вечірку?</h1>
+    <h1>Would you like a party?</h1>
+    <button class="button yes" onclick="vote('yes')">Yes</button>
+    <button class="button no" onclick="vote('no')">No</button>
 
-        <!-- Кнопки для голосування -->
-        <button id="yesButton" class="btn">Так, хочу!</button>
-        <button id="noButton" class="btn">Ні, не хочу.</button>
-
-        <div id="result">
-            <h2>Результати голосування:</h2>
-            <p id="yesCount">Так: 0</p>
-            <p id="noCount">Ні: 0</p>
-        </div>
+    <div class="results">
+        <p id="yes-votes">Yes Votes: 0</p>
+        <p id="no-votes">No Votes: 0</p>
     </div>
 
     <script>
-        // Завантажуємо результати голосування
-        function loadVotes() {
-            fetch('http://localhost:3000/votes')  // Використовуємо абсолютний шлях, якщо сервер і фронтенд на різних портах
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('yesCount').textContent = `Так: ${data.yes}`;
-                    document.getElementById('noCount').textContent = `Ні: ${data.no}`;
-                });
+        // Ініціалізація даних голосування
+        let votes = {
+            yes: localStorage.getItem('yes-votes') ? parseInt(localStorage.getItem('yes-votes')) : 0,
+            no: localStorage.getItem('no-votes') ? parseInt(localStorage.getItem('no-votes')) : 0
+        };
+
+        // Функція оновлення результатів на сторінці
+        function updateResults() {
+            document.getElementById('yes-votes').innerText = `Yes Votes: ${votes.yes}`;
+            document.getElementById('no-votes').innerText = `No Votes: ${votes.no}`;
         }
 
-        // Функція для обробки голосування
-        function handleVote(vote) {
-            const ip = '127.0.0.1'; // Для тестування можна встановити це вручну або використовувати реальний IP
+        // Функція голосування
+        function vote(option) {
+            if (localStorage.getItem('voted')) {
+                alert("You have already voted!");
+                return;
+            }
 
-            fetch('http://localhost:3000/vote', {  // Використовуємо абсолютний шлях, якщо сервер і фронтенд на різних портах
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ vote, ip })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert(data.message);
-                    loadVotes();
-                }
-            })
-            .catch(error => alert('Помилка: ' + error));
+            if (option === 'yes') {
+                votes.yes += 1;
+            } else if (option === 'no') {
+                votes.no += 1;
+            }
+
+            // Зберігаємо голоси в Local Storage
+            localStorage.setItem('yes-votes', votes.yes);
+            localStorage.setItem('no-votes', votes.no);
+            localStorage.setItem('voted', true);
+
+            // Оновлюємо результати на сторінці
+            updateResults();
         }
 
-        // Обробка кліків на кнопки
-        document.getElementById('yesButton').addEventListener('click', function() {
-            handleVote('yes');
-        });
-
-        document.getElementById('noButton').addEventListener('click', function() {
-            handleVote('no');
-        });
-
-        // Завантажуємо результати голосування при завантаженні сторінки
-        window.onload = loadVotes;
+        // Оновлюємо результати при завантаженні сторінки
+        updateResults();
     </script>
 </body>
 </html>
