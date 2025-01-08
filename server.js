@@ -1,74 +1,55 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const fs = require('fs');
 const path = require('path');
-const cors = require('cors');  // Імпортуємо cors
-
-// Створення сервера
+const fs = require('fs');
 const app = express();
+const port = process.env.PORT || 3000;
 
-// Додаємо middleware для CORS
-app.use(cors());
-
-// Підключення middleware
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public'))); // обслуговуємо статичні файли з папки 'public')
-
-// Шлях до JSON файлу для зберігання голосів
+// Шлях до файлу для збереження результатів голосування
 const votesFilePath = path.join(__dirname, 'votes.json');
 
-// Отримання поточного результату голосування
-app.get('/votes', (req, res) => {
-    fs.readFile(votesFilePath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).json({ message: 'Не вдалося зчитати дані з файлу' });
-        }
+// Статичні файли
+app.use(express.static(path.join(__dirname, 'public')));
 
-        const votesData = JSON.parse(data);
-        res.json(votesData.voteCount);
-    });
+// Парсинг JSON
+app.use(express.json());
+
+// Завантаження результатів голосування
+const loadVotes = () => {
+    if (fs.existsSync(votesFilePath)) {
+        const data = fs.readFileSync(votesFilePath);
+        return JSON.parse(data);
+    }
+    return { yes: 0, no: 0 };
+};
+
+// Збереження результатів голосування
+const saveVotes = (votes) => {
+    fs.writeFileSync(votesFilePath, JSON.stringify(votes, null, 2));
+};
+
+// Отримати результати голосування
+app.get('/api/votes', (req, res) => {
+    const votes = loadVotes();
+    res.json(votes);
 });
 
-// Голосування
-app.post('/vote', (req, res) => {
-    const { vote, ip } = req.body;
+// Відповісти на голосування
+app.post('/api/vote', (req, res) => {
+    const { vote } = req.body;
+    const votes = loadVotes();
 
-    // Зчитуємо поточні дані з JSON файлу
-    fs.readFile(votesFilePath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).json({ message: 'Не вдалося зчитати дані з файлу' });
-        }
+    if (vote === 'yes') {
+        votes.yes += 1;
+    } else if (vote === 'no') {
+        votes.no += 1;
+    }
 
-        const votesData = JSON.parse(data);
-
-        // Перевірка, чи користувач вже проголосував
-        const existingVote = votesData.votes.find(voteRecord => voteRecord.ip === ip);
-        if (existingVote) {
-            return res.status(400).json({ message: 'Ви вже проголосували!' });
-        }
-
-        // Додаємо новий голос до масиву
-        votesData.votes.push({ ip, vote });
-
-        // Оновлюємо підсумки голосування
-        if (vote === 'yes') {
-            votesData.voteCount.yes++;
-        } else if (vote === 'no') {
-            votesData.voteCount.no++;
-        }
-
-        // Записуємо оновлені дані назад у файл
-        fs.writeFile(votesFilePath, JSON.stringify(votesData, null, 2), 'utf8', (err) => {
-            if (err) {
-                return res.status(500).json({ message: 'Не вдалося записати дані в файл' });
-            }
-            res.json({ message: 'Ваш голос зараховано!' });
-        });
-    });
+    saveVotes(votes);
+    res.json(votes);
 });
 
-// Запуск сервера
-const port = 3000;
+// Слухаємо на порту
 app.listen(port, () => {
-    console.log(`Сервер запущено на порту ${port}`);
+    console.log(`Server is running on port ${port}`);
 });
+
